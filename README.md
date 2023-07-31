@@ -1,3 +1,3 @@
-# Linux DOT-FILES
+# Alpine Linux Config
 
-My personal Linux configuration files
+Configuration files for Alpine Linux
