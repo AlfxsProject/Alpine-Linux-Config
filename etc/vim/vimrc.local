@@ -1,0 +1,2 @@
+set history=0           " keep 0 lines of command history
+set viminfo=""          " Disable viminfo feature
