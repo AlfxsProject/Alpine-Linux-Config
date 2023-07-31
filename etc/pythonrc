@@ -1,0 +1,6 @@
+#!/bin/python3
+
+from readline import write_history_file
+
+if __name__ == "__main__":
+	write_history_file = lambda *args: None
