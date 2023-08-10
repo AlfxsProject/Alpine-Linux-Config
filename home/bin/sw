@@ -1,0 +1,30 @@
+#!/bin/sh
+
+USERNAME=user
+
+LOCKFILE=/var/lock/$USERNAME/sway.lock
+PIPEWIRE_LOGFILE=/var/log/$USERNAME/pipewire.log
+SWAY_LOGFILE=/var/log/$USERNAME/sway.log
+
+if [ -e $LOCKFILE ]; then
+	echo "Sway lockfile exists. Exiting..."
+	exit
+fi
+
+touch $LOCKFILE
+
+export `dbus-launch`
+
+echo "Launching PipeWire"
+
+exec /usr/libexec/pipewire-launcher &>$PIPEWIRE_LOGFILE &
+
+echo "Starting Sway"
+
+exec dbus-run-session -- sway &>$SWAY_LOGFILE &
+
+wait
+
+echo "All processes finished"
+
+rm $LOCKFILE
