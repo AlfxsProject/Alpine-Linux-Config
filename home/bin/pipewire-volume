@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if [ -e $HOME/var/lock/pipewire-volume.lock ]; then
+	echo "PipeWire volume lockfile exists. Exiting..."
+	exit
+fi
+
+touch $HOME/var/lock/pipewire-volume.lock
+
+delta_volume=$1
+
+pactl list sinks | grep "Name: " | cut -c8- | while read sink; do
+	current_volume=$(pactl list sinks |
+			awk '/^\s+Name: /{matched = $2 == "'${sink}'"}
+				/^\s+Volume: / && matched {print $7; exit}')
+
+	if [[ "${delta_volume:0:1}" == "m" ]]; then
+		pactl set-sink-mute ${sink} toggle
+
+	elif [[ "${delta_volume:0:1}" == "-" ]]; then
+		echo "Current volume: ${current_volume}. Decreasing by ${delta_volume}dB"
+		pactl set-sink-volume ${sink} ${delta_volume}dB
+	else
+		if [[ "${delta_volume:0:1}" == "+" ]]; then
+			if [[ "${current_volume}" == "-inf" ]]; then
+				pactl set-sink-volume ${sink} 1%
+
+			elif (( $(echo "${current_volume} ${delta_volume} > 0" | bc -l ) )); then
+				echo "Current volume: ${current_volume}. Attempted to increase by ${delta_volume}dB but the volume is capped at 0dB"
+				pactl set-sink-volume ${sink} 0dB
+			else
+				echo "Current volume: ${current_volume}. Increasing by ${delta_volume}dB"
+				pactl set-sink-volume ${sink} ${delta_volume}dB
+			fi
+		else
+			if (( $(echo "${delta_volume} > 0" | bc -l ) )); then
+				echo "Current volume: ${current_volume}. Attempted to set volume to ${delta_volume}dB but the volume is capped at 0dB"
+				pactl set-sink-volume ${sink} 0dB
+			else
+				echo "Current volume: ${current_volume}. Setting volume to ${delta_volume}dB"
+				pactl set-sink-volume ${sink} ${delta_volume}dB
+			fi
+		fi
+	fi
+done
+
+rm $HOME/var/lock/pipewire-volume.lock
